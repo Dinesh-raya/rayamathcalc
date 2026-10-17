@@ -1,0 +1,7 @@
+# Normalise line endings to LF everywhere.
+#
+# The repository is already stored with LF, but core.autocrlf=true makes Git
+# convert to CRLF on checkout and print "LF will be replaced by CRLF" on every
+# change. Pinning the attribute keeps Git, the working tree and GitHub Pages
+# consistent and silences that noise.
+* text=auto eol=lf

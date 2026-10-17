@@ -14,6 +14,9 @@
   --muted: #475569;
   --border: #e2e8f0;
   --border-strong: #cbd5e1;
+  /* Borders on interactive controls must reach 3:1 (WCAG 1.4.11); this is a
+     darker slate than the decorative --border/--border-strong. */
+  --control-border: #64748b;
   --accent: #5b2eff;
   --accent-strong: #4338ca;
   --accent-soft: #eef2ff;
@@ -46,6 +49,7 @@
     --muted: #a5abc7;
     --border: #2c3050;
     --border-strong: #3d4270;
+    --control-border: #6b74ab;
     --accent: #9d8cff;
     --accent-strong: #b6a9ff;
     --accent-soft: #262350;
@@ -72,6 +76,7 @@
   --muted: #a5abc7;
   --border: #2c3050;
   --border-strong: #3d4270;
+  --control-border: #6b74ab;
   --accent: #9d8cff;
   --accent-strong: #b6a9ff;
   --accent-soft: #262350;
@@ -206,7 +211,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: clamp(1rem, 3vw, 2rem); 
 .btn-block { display: flex; width: 100%; margin-bottom: .5rem; }
 .btn-primary { background: var(--accent); color: var(--accent-contrast); }
 .btn-primary:hover:not(:disabled) { background: var(--accent-strong); box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 38%, transparent); }
-.btn-outline { background: transparent; border-color: var(--border-strong); }
+.btn-outline { background: transparent; border-color: var(--control-border); }
 .btn-outline:hover:not(:disabled) { background: var(--surface-2); border-color: var(--accent); }
 .btn-ghost { background: transparent; }
 .btn-ghost:hover:not(:disabled) { background: var(--surface-2); }
@@ -234,7 +239,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: clamp(1rem, 3vw, 2rem); 
 .field.checkbox > label { display: flex; align-items: center; gap: .55rem; font-weight: 500; }
 input[type="text"], input[type="number"], select, textarea {
   font: inherit; color: var(--text); background: var(--surface);
-  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  border: 1px solid var(--control-border); border-radius: var(--radius-sm);
   padding: .6rem .7rem; width: 100%; max-width: 420px; min-height: 44px;
 }
 input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
@@ -346,7 +351,7 @@ kbd {
 .mcq-option {
   font: inherit; font-size: 1.1rem; font-weight: 600; cursor: pointer;
   text-align: left; padding: .85rem 1rem; min-height: 56px;
-  background: var(--surface-2); border: 1px solid var(--border-strong);
+  background: var(--surface-2); border: 1px solid var(--control-border);
   border-radius: var(--radius-sm); color: var(--text);
   display: flex; align-items: center; gap: .7rem;
   transition: border-color .15s ease, transform .12s ease, box-shadow .15s ease, background-color .15s ease;
@@ -398,7 +403,7 @@ kbd {
 .chip-btn {
   font: inherit; font-size: .84rem; font-weight: 600; cursor: pointer;
   padding: .35rem .8rem; min-height: 36px; border-radius: 999px;
-  background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
+  background: var(--surface-2); border: 1px solid var(--control-border); color: var(--muted);
   display: inline-flex; align-items: center; gap: .4rem;
   transition: border-color .15s ease, color .15s ease, background-color .15s ease, transform .12s ease;
 }
