@@ -14,6 +14,52 @@
   /* ------------------------------------------------------------ helpers */
 
   function $(id) { return document.getElementById(id); }
+
+  /* Topic id -> sprite icon name (the symbols live in index.html). */
+  var TOPIC_ICON = {
+    'addition': 'plus',
+    'subtraction': 'minus',
+    'multiplication': 'times',
+    'division': 'divide',
+    'tables': 'grid',
+    'squares': 'square',
+    'cubes': 'cube',
+    'squareroot': 'root',
+    'cuberoot': 'root',
+    'powers': 'zap',
+    'percentage': 'percent',
+    'fraction-to-percent': 'percent',
+    'percent-to-fraction': 'fraction',
+    'fraction-arithmetic': 'fraction',
+    'bodmas': 'brackets',
+    'mixed-arithmetic': 'calculator',
+    'number-patterns': 'dots',
+    'mixed': 'shuffle'
+  };
+
+  /* Metric label -> sprite icon name. */
+  var METRIC_ICON = {
+    'Questions shown': 'list',
+    'Answered': 'list',
+    'Correct': 'check',
+    'Incorrect': 'x-circle',
+    'Skipped': 'skip',
+    'Timed out': 'clock',
+    'Accuracy': 'target',
+    'Correct of shown': 'chart',
+    'Average response': 'clock',
+    'Total time': 'clock',
+    'Questions / min': 'zap',
+    'Correct / min': 'trend',
+    'Score': 'trophy'
+  };
+
+  /* Markup for one sprite icon, e.g. icon('play') -> <svg ...><use href="#i-play"></use></svg>. */
+  function icon(name, cls) {
+    return '<svg class="icon' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#i-' +
+      name + '"></use></svg>';
+  }
+
   function make(tag, attrs, text) {
     var n = document.createElement(tag);
     if (attrs) { Object.keys(attrs).forEach(function (k) {
@@ -159,14 +205,14 @@
     clear(grid);
 
     var mixed = make('button', { type: 'button', class: 'topic-card featured', onclick: function () { startConfig('mixed'); } });
-    mixed.appendChild(make('span', { class: 'group' }, 'Recommended'));
+    mixed.appendChild(make('span', { class: 'tc-top', html: icon(TOPIC_ICON.mixed) + '<span class="group">Recommended</span>' }));
     mixed.appendChild(make('strong', null, 'Mixed practice'));
     mixed.appendChild(make('span', { class: 'muted small' }, 'Blend topics with adjustable weights'));
     grid.appendChild(mixed);
 
     G.listTopics().forEach(function (t) {
       var card = make('button', { type: 'button', class: 'topic-card', onclick: function () { startConfig(t.id); } });
-      card.appendChild(make('span', { class: 'group' }, t.group));
+      card.appendChild(make('span', { class: 'tc-top', html: icon(TOPIC_ICON[t.id] || 'calculator') + '<span class="group">' + t.group + '</span>' }));
       card.appendChild(make('strong', null, t.label));
       grid.appendChild(card);
     });
@@ -614,7 +660,10 @@
 
   function setPausedUI(paused) {
     $('btnPause').setAttribute('aria-pressed', String(paused));
-    $('btnPause').textContent = paused ? 'Resume' : 'Pause';
+    var lbl = $('btnPauseLabel');
+    if (lbl) lbl.textContent = paused ? 'Resume' : 'Pause';
+    var ic = $('btnPauseIcon');
+    if (ic) ic.setAttribute('href', paused ? '#i-play' : '#i-pause');
   }
 
   function openPauseModal() {
@@ -716,7 +765,8 @@
 
   function metricCard(label, value, note, cls) {
     var c = make('div', { class: 'metric' + (cls ? ' ' + cls : '') });
-    c.appendChild(make('div', { class: 'm-label' }, label));
+    var ic = METRIC_ICON[label];
+    c.appendChild(make('div', { class: 'm-label', html: (ic ? icon(ic) : '') + '<span>' + label + '</span>' }));
     c.appendChild(make('div', { class: 'm-value' }, value));
     if (note) c.appendChild(make('div', { class: 'm-note' }, note));
     return c;
