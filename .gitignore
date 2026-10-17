@@ -1,0 +1,7 @@
+# Local build/spec notes — kept on disk, not published.
+master-prompt.txt
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.tmp

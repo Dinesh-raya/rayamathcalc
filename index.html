@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Speed Maths Trainer — bank exam practice</title>
+  <meta name="description" content="A free, offline-friendly speed maths trainer for Indian banking and government competitive exams. Dynamic questions, timers, scoring and mistake analysis. No account, no tracking.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <img src="assets/favicon.svg" alt="" width="28" height="28" aria-hidden="true">
+      <span>Speed Maths Trainer</span>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="btn btn-ghost" id="btnHelp" aria-haspopup="dialog">Shortcuts</button>
+      <button type="button" class="btn btn-ghost" id="btnTheme" aria-pressed="false" title="Switch colour theme">Theme</button>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ============================================ DASHBOARD ============ -->
+    <section id="screen-dashboard" class="screen" aria-labelledby="dash-heading">
+      <div class="hero">
+        <h1 id="dash-heading">Speed maths practice for bank exams</h1>
+        <p class="lede">
+          Build calculation speed and accuracy with unlimited generated questions across 17 topics.
+          Everything runs in your browser; nothing is saved, uploaded or tracked. Close or refresh the
+          page and the current drill disappears &mdash; that is deliberate.
+        </p>
+        <div class="hero-actions">
+          <button type="button" class="btn btn-primary btn-lg" id="btnQuickStart">Start practising</button>
+          <button type="button" class="btn btn-outline" id="btnQuickConfig">Configure a drill</button>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <section class="card" aria-labelledby="how-heading">
+          <h2 id="how-heading">How it works</h2>
+          <ol class="steps">
+            <li>Pick a topic or mixed practice, set difficulty and the session type.</li>
+            <li>Answer with the keyboard (Enter submits) or tap the on-screen options.</li>
+            <li>Review every question afterwards &mdash; with the correct answer and a shortcut.</li>
+            <li>Retry your mistakes or run a fresh set of the same topic.</li>
+          </ol>
+          <p class="muted small">
+            Difficulty changes the <em>patterns</em> used, not just the size of the numbers. Every answer
+            shown is computed when the question is built and checked again before it is displayed.
+          </p>
+        </section>
+
+        <section class="card" aria-labelledby="keys-heading">
+          <h2 id="keys-heading">Keyboard shortcuts</h2>
+          <dl class="keys">
+            <dt><kbd>Enter</kbd></dt><dd>Submit the current answer</dd>
+            <dt><kbd>Ctrl</kbd>+<kbd>&rarr;</kbd> <span class="muted">or</span> <kbd>Alt</kbd>+<kbd>S</kbd></dt><dd>Skip the question</dd>
+            <dt><kbd>1</kbd>&ndash;<kbd>6</kbd></dt><dd>Choose an MCQ option</dd>
+            <dt><kbd>P</kbd></dt><dd>Pause / resume the session</dd>
+            <dt><kbd>Esc</kbd></dt><dd>Open the pause &amp; exit menu</dd>
+          </dl>
+          <p class="muted small">Tab is never hijacked &mdash; it keeps its normal job of moving focus.</p>
+        </section>
+      </div>
+
+      <section aria-labelledby="topics-heading">
+        <h2 id="topics-heading">Practise a topic</h2>
+        <div class="topic-grid" id="topicGrid"></div>
+      </section>
+
+      <section class="card card-note" aria-labelledby="limits-heading">
+        <h2 id="limits-heading">What this tool does and does not do</h2>
+        <ul class="ticks">
+          <li>Generates questions live &mdash; no fixed question bank, so sessions can be repeated indefinitely.</li>
+          <li>Keeps the current drill and its analysis in memory only. There is no history and no saved progress.</li>
+          <li>Sends nothing anywhere: no analytics, no accounts, no external requests.</li>
+          <li>Shows a verified correct answer for every wrong, skipped and timed-out question.</li>
+        </ul>
+      </section>
+    </section>
+
+    <!-- =========================================== CONFIGURATION ========= -->
+    <section id="screen-config" class="screen" hidden aria-labelledby="config-heading">
+      <div class="screen-head">
+        <button type="button" class="btn btn-ghost" id="btnBackDash">&larr; Dashboard</button>
+        <h1 id="config-heading">Configure drill</h1>
+      </div>
+
+      <div class="config-layout">
+        <div class="config-main">
+
+          <section class="card" aria-labelledby="cfg-topic-h">
+            <h2 id="cfg-topic-h">Topic</h2>
+            <div class="field">
+              <label for="cfgTopic">What do you want to practise?</label>
+              <select id="cfgTopic"></select>
+            </div>
+            <p class="muted small" id="topicBlurb"></p>
+          </section>
+
+          <section class="card" aria-labelledby="cfg-diff-h">
+            <h2 id="cfg-diff-h">Difficulty</h2>
+            <div class="segmented" role="radiogroup" aria-labelledby="cfg-diff-h" id="cfgDifficulty">
+              <button type="button" role="radio" aria-checked="true"  data-diff="easy">Easy</button>
+              <button type="button" role="radio" aria-checked="false" data-diff="medium">Medium</button>
+              <button type="button" role="radio" aria-checked="false" data-diff="hard">Hard</button>
+            </div>
+            <p class="muted small" id="diffBlurb">Each level uses different question patterns and complexity.</p>
+          </section>
+
+          <section class="card" aria-labelledby="cfg-session-h">
+            <h2 id="cfg-session-h">Session type</h2>
+            <div class="field">
+              <label for="cfgSessionType">How should the drill end?</label>
+              <select id="cfgSessionType">
+                <option value="fixed">Fixed number of questions</option>
+                <option value="countdown">Countdown timer</option>
+                <option value="stopwatch">Stopwatch (count up, stop manually)</option>
+                <option value="endless">Endless practice</option>
+                <option value="untimed">Untimed (no session clock)</option>
+              </select>
+            </div>
+            <div class="field" id="wrapCount">
+              <label for="cfgCount">Number of questions</label>
+              <input type="number" id="cfgCount" min="1" max="500" step="1" value="10" inputmode="numeric">
+            </div>
+            <div class="field" id="wrapDuration" hidden>
+              <label for="cfgMinutes">Countdown length (minutes)</label>
+              <input type="number" id="cfgMinutes" min="0.5" max="60" step="0.5" value="5" inputmode="decimal">
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="cfg-answer-h">
+            <h2 id="cfg-answer-h">Answering</h2>
+            <div class="field">
+              <label for="cfgAnswerMode">Answer entry</label>
+              <select id="cfgAnswerMode">
+                <option value="input">Type the answer</option>
+                <option value="mcq">Multiple choice</option>
+              </select>
+            </div>
+            <div class="field" id="wrapMcqCount" hidden>
+              <label for="cfgMcqCount">Options per question</label>
+              <input type="number" id="cfgMcqCount" min="2" max="6" step="1" value="4" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="cfgFeedback">Feedback timing</label>
+              <select id="cfgFeedback">
+                <option value="immediate">Show correct/incorrect immediately</option>
+                <option value="end">Show everything at the end</option>
+              </select>
+            </div>
+            <div class="field checkbox" id="wrapAutoAdvance" hidden>
+              <label><input type="checkbox" id="cfgAutoAdvance"> Advance automatically after feedback</label>
+            </div>
+            <div class="field" id="wrapAutoAdvanceMs" hidden>
+              <label for="cfgAutoAdvanceMs">Auto-advance delay (seconds)</label>
+              <input type="number" id="cfgAutoAdvanceMs" min="0.5" max="10" step="0.5" value="1.5" inputmode="decimal">
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="cfg-scoring-h">
+            <h2 id="cfg-scoring-h">Scoring &amp; timing</h2>
+            <div class="field checkbox">
+              <label><input type="checkbox" id="cfgNegative"> Negative marking for wrong answers</label>
+            </div>
+            <div class="field" id="wrapNegativeFraction" hidden>
+              <label for="cfgNegativeFraction">Penalty per wrong answer</label>
+              <select id="cfgNegativeFraction">
+                <option value="0.25">&minus;1/4 mark</option>
+                <option value="0.3333">&minus;1/3 mark</option>
+                <option value="0.5">&minus;1/2 mark</option>
+              </select>
+            </div>
+            <div class="field checkbox">
+              <label><input type="checkbox" id="cfgPerQuestion"> Limit time per question</label>
+            </div>
+            <div class="field" id="wrapPerQuestion" hidden>
+              <label for="cfgPerQuestionSec">Seconds allowed per question</label>
+              <input type="number" id="cfgPerQuestionSec" min="3" max="300" step="1" value="20" inputmode="numeric">
+            </div>
+            <div class="field checkbox">
+              <label><input type="checkbox" id="cfgAdaptive"> Adaptive difficulty (adjusts level as you go)</label>
+            </div>
+            <p class="muted small">Adaptive mode starts at the level above and adjusts after at least five answered questions. Leave it off to keep the level fixed.</p>
+          </section>
+
+          <section class="card" id="cardTopicSettings" aria-labelledby="cfg-topic-settings-h">
+            <h2 id="cfg-topic-settings-h">Topic settings</h2>
+            <div id="topicSettings"></div>
+          </section>
+
+          <section class="card" id="cardWeights" hidden aria-labelledby="cfg-weights-h">
+            <h2 id="cfg-weights-h">Mixed practice weights</h2>
+            <p class="muted small">Weights are relative and are normalised automatically. Zero removes a topic.</p>
+            <div id="weightList"></div>
+            <div class="field">
+              <label for="addWeightTopic">Add a topic</label>
+              <select id="addWeightTopic"></select>
+            </div>
+          </section>
+
+        </div>
+
+        <aside class="config-side">
+          <div class="card sticky">
+            <h2>Ready to go?</h2>
+            <p class="muted small" id="configSummary"></p>
+            <ul class="errors" id="configErrors" hidden aria-live="polite"></ul>
+            <button type="button" class="btn btn-primary btn-block" id="btnStartDrill">Start drill</button>
+            <button type="button" class="btn btn-outline btn-block" id="btnResetConfig">Reset to defaults</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============================================== PRACTICE ========== -->
+    <section id="screen-practice" class="screen" hidden aria-labelledby="practice-heading">
+      <h1 class="sr-only" id="practice-heading">Practice</h1>
+
+      <div class="practice-bar">
+        <div class="pb-item">
+          <span class="pb-label">Question</span>
+          <span class="pb-value" id="pQuestionNo">1</span>
+        </div>
+        <div class="pb-item">
+          <span class="pb-label" id="pClockLabel">Elapsed</span>
+          <span class="pb-value" id="pClock">0:00</span>
+        </div>
+        <div class="pb-item">
+          <span class="pb-label">Score</span>
+          <span class="pb-value" id="pScore">0</span>
+        </div>
+        <div class="pb-item" id="pDiffWrap">
+          <span class="pb-label">Level</span>
+          <span class="pb-value" id="pDifficulty">Medium</span>
+        </div>
+        <div class="pb-spacer"></div>
+        <button type="button" class="btn btn-ghost" id="btnPause" aria-pressed="false">Pause</button>
+        <button type="button" class="btn btn-danger-ghost" id="btnEnd">End drill</button>
+      </div>
+
+      <div class="progress" role="progressbar" aria-label="Drill progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pProgressWrap">
+        <div class="progress-fill" id="pProgressFill"></div>
+      </div>
+
+      <div class="practice-stage">
+        <div class="qmeta">
+          <span class="chip" id="pTopicChip">Topic</span>
+          <span class="chip chip-quiet" id="pQTSubject">Question timer</span>
+          <span class="chip chip-quiet" id="pQTimer">0.0s</span>
+        </div>
+
+        <p class="question" id="pPrompt">&nbsp;</p>
+
+        <div id="pAnswerArea">
+          <div class="answer-row" id="pInputWrap">
+            <label class="sr-only" for="pInput">Your answer</label>
+            <input type="text" id="pInput" class="answer-input" autocomplete="off" autocorrect="off"
+                   autocapitalize="off" spellcheck="false" inputmode="text" enterkeyhint="done"
+                   placeholder="Type your answer, then press Enter">
+            <button type="button" class="btn btn-primary" id="btnSubmit">Submit</button>
+          </div>
+          <div class="mcq-grid" id="pMcq" hidden role="group" aria-label="Answer options"></div>
+        </div>
+
+        <div class="feedback" id="pFeedback" role="status" aria-live="polite" hidden></div>
+
+        <div class="answer-actions">
+          <button type="button" class="btn btn-outline" id="btnSkip">Skip</button>
+          <button type="button" class="btn btn-primary" id="btnNext" hidden>Next question &rarr;</button>
+          <span class="muted small" id="pHint"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============================================== RESULTS ========== -->
+    <section id="screen-results" class="screen" hidden aria-labelledby="results-heading">
+      <div class="screen-head">
+        <h1 id="results-heading">Drill results</h1>
+        <p class="muted" id="resultsSubtitle"></p>
+      </div>
+
+      <p class="callout" id="resultsNote" hidden></p>
+
+      <div class="metrics" id="metricsGrid"></div>
+
+      <section class="card" id="cardTopicWise" hidden aria-labelledby="tw-h">
+        <h2 id="tw-h">Topic-wise performance</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th scope="col">Topic</th><th scope="col">Shown</th><th scope="col">Answered</th>
+                  <th scope="col">Correct</th><th scope="col">Incorrect</th><th scope="col">Skipped</th>
+                  <th scope="col">Timed out</th><th scope="col">Accuracy</th><th scope="col">Avg time</th></tr>
+            </thead>
+            <tbody id="topicWiseBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card" id="cardWeakness" hidden aria-labelledby="wk-h">
+        <h2 id="wk-h">Where to improve</h2>
+        <div class="grid grid-2">
+          <div>
+            <h3>Slowest questions</h3>
+            <ul class="list" id="slowList"></ul>
+          </div>
+          <div>
+            <h3>Most errors by topic</h3>
+            <ul class="list" id="errorList"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="rev-h">
+        <div class="card-head-row">
+          <h2 id="rev-h">Question review</h2>
+          <div class="filters" role="group" aria-label="Review filter" id="reviewFilters">
+            <button type="button" class="chip-btn is-active" data-filter="all">All</button>
+            <button type="button" class="chip-btn" data-filter="incorrect">Incorrect</button>
+            <button type="button" class="chip-btn" data-filter="skipped">Skipped</button>
+            <button type="button" class="chip-btn" data-filter="timedout">Timed out</button>
+            <button type="button" class="chip-btn" data-filter="slow">Slow</button>
+          </div>
+        </div>
+        <ol class="review" id="reviewList"></ol>
+      </section>
+
+      <section class="actions-bar" aria-label="Next steps">
+        <button type="button" class="btn btn-primary" id="btnPractiseWrong">Practise wrong questions</button>
+        <button type="button" class="btn btn-outline" id="btnRetryDrill">Retry drill with new questions</button>
+        <button type="button" class="btn btn-outline" id="btnSameTopic">Practise this topic again</button>
+        <button type="button" class="btn btn-ghost" id="btnBackHome">Back to dashboard</button>
+      </section>
+    </section>
+  </main>
+
+  <!-- ================================================ MODAL ============= -->
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" id="modalBox">
+      <h2 id="modalTitle">Are you sure?</h2>
+      <div id="modalBody" class="modal-body"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- Load order matters: generic libraries first, the app last.
+       Classic scripts so the site also works when index.html is opened directly. -->
+  <script src="js/validation.js"></script>
+  <script src="js/generators.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/analytics.js"></script>
+  <script src="js/drills.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

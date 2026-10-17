@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Speed Maths Trainer">
+  <rect width="64" height="64" rx="15" fill="#4a45d6"/>
+  <g fill="#ffffff">
+    <circle cx="21" cy="20" r="6"/>
+    <circle cx="43" cy="44" r="6"/>
+    <path d="M45 15 19 49" stroke="#ffffff" stroke-width="6" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>

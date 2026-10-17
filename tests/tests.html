@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speed Maths Trainer — engine tests</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 24px; max-width: 900px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 16px; opacity: .75; }
+  .summary { position: sticky; top: 0; padding: 12px 16px; border-radius: 10px; font-weight: 600; margin-bottom: 12px; }
+  .summary.pass { background: #e6f6ea; color: #0a5c2b; border: 1px solid #9ad9b0; }
+  .summary.fail { background: #fdeaea; color: #8a1414; border: 1px solid #f0a8a8; }
+  .summary.running { background: #eef2f7; color: #334; border: 1px solid #c8d2de; }
+  ol { list-style: none; margin: 0; padding: 0; }
+  li { display: flex; gap: 10px; padding: 6px 8px; border-bottom: 1px solid rgba(128,128,128,.18); align-items: flex-start; }
+  li .tick { width: 1.4em; flex: none; font-weight: 700; }
+  li.pass .tick { color: #1a7f37; }
+  li.fail { background: rgba(220,38,38,.07); }
+  li.fail .tick { color: #c62828; }
+  li .msg { display: block; color: #c62828; font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: pre-wrap; margin-top: 2px; }
+  @media (prefers-color-scheme: dark) {
+    .summary.pass { background: #10281a; color: #7fe0a3; border-color: #235c39; }
+    .summary.fail { background: #2c1414; color: #ff9d9d; border-color: #6c2a2a; }
+    .summary.running { background: #1b2129; color: #cdd6e0; border-color: #38414c; }
+    li.fail { background: rgba(220,38,38,.16); }
+  }
+</style>
+</head>
+<body>
+  <h1>Engine tests</h1>
+  <p class="sub">Runs the same shared cases as <code>node --test tests/engine.test.js</code>, directly in the browser. No build step, no dependencies.</p>
+  <div id="summary" class="summary running" role="status" aria-live="polite">Running…</div>
+  <ol id="list"></ol>
+
+  <script>
+    // Minimal subset of the node:assert API used by tests/cases.js.
+    (function () {
+      'use strict';
+      function fail(message, actual, expected) {
+        var err = new Error(message || 'Assertion failed');
+        err.actual = actual;
+        err.expected = expected;
+        throw err;
+      }
+      function show(v) {
+        try { return JSON.stringify(v); } catch (e) { return String(v); }
+      }
+      function equal(a, b) { return a === b || (a !== a && b !== b); }
+      function deepEqual(a, b) {
+        if (equal(a, b)) return true;
+        if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
+        var ka = Object.keys(a), kb = Object.keys(b);
+        if (ka.length !== kb.length) return false;
+        for (var i = 0; i < ka.length; i++) {
+          if (!Object.prototype.hasOwnProperty.call(b, ka[i])) return false;
+          if (!deepEqual(a[ka[i]], b[ka[i]])) return false;
+        }
+        return true;
+      }
+      window.assert = {
+        ok: function (v, m) { if (!v) fail(m || ('Expected a truthy value, got ' + show(v)), v, true); },
+        equal: function (a, b, m) { if (!(a == b)) fail(m || (show(a) + ' == ' + show(b)), a, b); }, // eslint-disable-line eqeqeq
+        strictEqual: function (a, b, m) { if (a !== b) fail(m || (show(a) + ' !== ' + show(b)), a, b); },
+        notEqual: function (a, b, m) { if (a == b) fail(m || (show(a) + ' != ' + show(b)), a, b); }, // eslint-disable-line eqeqeq
+        notStrictEqual: function (a, b, m) { if (a === b) fail(m || (show(a) + ' === ' + show(b)), a, b); },
+        deepEqual: function (a, b, m) { if (!deepEqual(a, b)) fail(m || (show(a) + ' deepEqual ' + show(b)), a, b); },
+        notDeepEqual: function (a, b, m) { if (deepEqual(a, b)) fail(m || 'Expected values to differ', a, b); },
+        throws: function (fn, m) {
+          var threw = false;
+          try { fn(); } catch (e) { threw = true; }
+          if (!threw) fail(m || 'Expected the function to throw', undefined, 'throw');
+        },
+        match: function (str, re, m) { if (!re.test(String(str))) fail(m || ('Expected ' + show(str) + ' to match ' + re), str, String(re)); }
+      };
+    })();
+  </script>
+
+  <script src="../js/validation.js"></script>
+  <script src="../js/generators.js"></script>
+  <script src="../js/timer.js"></script>
+  <script src="../js/analytics.js"></script>
+  <script src="../js/drills.js"></script>
+  <script src="cases.js"></script>
+
+  <script>
+    (function () {
+      'use strict';
+      var cases = (window.SM && window.SM.testCases) || [];
+      var list = document.getElementById('list');
+      var summary = document.getElementById('summary');
+      var passed = 0, failed = 0;
+
+      cases.forEach(function (c) {
+        var li = document.createElement('li');
+        var tick = document.createElement('span');
+        tick.className = 'tick';
+        var body = document.createElement('span');
+        body.textContent = c.name;
+        li.appendChild(tick);
+        li.appendChild(body);
+        list.appendChild(li);
+
+        try {
+          c.fn(window.assert);
+          passed++;
+          li.classList.add('pass');
+          tick.textContent = '\u2714';
+          var sr = document.createElement('span');
+          sr.className = 'sr-only';
+          sr.textContent = 'passed';
+        } catch (err) {
+          failed++;
+          li.classList.add('fail');
+          tick.textContent = '\u2718';
+          var m = document.createElement('span');
+          m.className = 'msg';
+          m.textContent = (err && err.message) ? err.message : String(err);
+          body.appendChild(m);
+        }
+      });
+
+      summary.classList.remove('running');
+      summary.classList.add(failed ? 'fail' : 'pass');
+      summary.textContent = (failed ? '\u2718 ' : '\u2714 ') + passed + ' passed, ' + failed + ' failed, ' + cases.length + ' total';
+      document.title = (failed ? '\u2718 ' + failed + ' failing' : '\u2714 all ' + passed + ' passing') + ' — Speed Maths Trainer tests';
+      window.__testSummary = { passed: passed, failed: failed, total: cases.length };
+    })();
+  </script>
+</body>
+</html>
