@@ -43,6 +43,78 @@
     a.equal(bad.length, 0, 'invalid questions: ' + bad.slice(0, 3).join(' | '));
   });
 
+  t('no topic silently falls back to the emergency question', function (a) {
+    // generateQuestion() catches any generator error and, after 12 tries,
+    // substitutes a trivial "7 + 8". That fallback is a valid question, so only
+    // an explicit check catches a generator that has quietly stopped working.
+    var offenders = {};
+    G().listTopics().forEach(function (topic) {
+      ['easy', 'medium', 'hard'].forEach(function (diff) {
+        var s = G().defaultSettings(topic.id, diff);
+        for (var i = 0; i < 120; i++) {
+          var q = G().generateQuestion(topic.id, s, diff);
+          // The emergency fallback returns topic 'addition' regardless of what was
+          // asked for. Intra-topic fallbacks (e.g. mixed-arithmetic) are fine.
+          if (q.topic !== topic.id) offenders[topic.id + '/' + diff] = true;
+        }
+      });
+    });
+    a.equal(Object.keys(offenders).length, 0, 'fallback used by: ' + Object.keys(offenders).join(', '));
+  });
+
+  t('fraction arithmetic returns fractions at every difficulty', function (a) {
+    ['easy', 'medium', 'hard'].forEach(function (diff) {
+      var s = G().defaultSettings('fraction-arithmetic', diff);
+      for (var i = 0; i < 60; i++) {
+        var q = G().generateQuestion('fraction-arithmetic', s, diff);
+        a.equal(q.answer.type, 'fraction', diff + ' should give a fraction answer: ' + q.prompt);
+        a.ok(/[0-9]/.test(q.prompt), 'prompt should contain the fractions: ' + q.prompt);
+      }
+    });
+  });
+
+  t('percentage → fraction is mathematically exact (including recurring percentages)', function (a) {
+    // "33 1/3% as a fraction in lowest terms" must really equal 1/3, i.e. the
+    // percentage printed in the prompt has to match the answer as a rational.
+    function parsePercent(text) {
+      var m = /^(\d+)\s+(\d+)\/(\d+)$/.exec(text);          // "33 1/3"
+      if (m) return { n: Number(m[1]) * Number(m[3]) + Number(m[2]), d: Number(m[3]) * 100 };
+      m = /^(\d+)\/(\d+)$/.exec(text);                       // "1/2"
+      if (m) return { n: Number(m[1]), d: Number(m[2]) * 100 };
+      m = /^([\d.]+)$/.exec(text);                           // "12.5" / "25"
+      if (m) { var dp = (m[1].split('.')[1] || '').length; var f = Math.pow(10, dp);
+               return { n: Math.round(Number(m[1]) * f), d: f * 100 }; }
+      return null;
+    }
+    ['easy', 'medium', 'hard'].forEach(function (diff) {
+      var s = G().defaultSettings('percent-to-fraction', diff);
+      for (var i = 0; i < 200; i++) {
+        var q = G().generateQuestion('percent-to-fraction', s, diff);
+        var m = /^(.+)% as a fraction in lowest terms$/.exec(q.prompt);
+        a.ok(m, 'unexpected prompt: ' + q.prompt);
+        var p = parsePercent(m[1]);
+        a.ok(p, 'unparseable percentage: ' + q.prompt);
+        a.equal(p.n * q.answer.den, q.answer.num * p.d,
+          'printed percentage must equal the answer fraction: ' + q.prompt + ' -> ' + q.answer.num + '/' + q.answer.den);
+      }
+    });
+  });
+
+  t('fraction → percentage answers are exactly the stated rounding', function (a) {
+    ['easy', 'medium', 'hard'].forEach(function (diff) {
+      var s = G().defaultSettings('fraction-to-percent', diff);
+      for (var i = 0; i < 200; i++) {
+        var q = G().generateQuestion('fraction-to-percent', s, diff);
+        var m = /^(\d+)\/(\d+) as a percentage/.exec(q.prompt);
+        a.ok(m, 'unexpected prompt: ' + q.prompt);
+        var exact = Number(m[1]) / Number(m[2]) * 100;
+        var tol = Math.pow(10, -q.answer.places) / 2 + 1e-9;
+        a.ok(Math.abs(exact - q.answer.value) <= tol,
+          q.prompt + ' should round to ' + q.answer.value + ' (exact ' + exact + ')');
+      }
+    });
+  });
+
   t('every generated answer round-trips through its own validator', function (a) {
     var bad = [];
     G().listTopics().forEach(function (topic) {

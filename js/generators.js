@@ -51,6 +51,7 @@
     return pairs[pairs.length - 1][0];
   }
   function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a || 0; }
+  function lcm(a, b) { if (!a || !b) return 0; return Math.abs(a * b) / gcd(a, b); }
   function simplify(n, d) { if (d < 0) { n = -n; d = -d; } var g = gcd(n, d) || 1; return { num: n / g, den: d / g }; }
   function isInt(n) { return typeof n === 'number' && isFinite(n) && Math.floor(n) === n; }
   function pow10(d) { return Math.pow(10, d); }
@@ -67,10 +68,10 @@
 
   // Common bank-exam fraction ↔ percentage relationships (spec §5).
   var FRACTION_PERCENT = [
-    { f: [1, 2], p: 50 },    { f: [1, 3], p: 33.33 }, { f: [2, 3], p: 66.66 },
+    { f: [1, 2], p: 50 },    { f: [1, 3], p: 33.33 }, { f: [2, 3], p: 66.67 },
     { f: [1, 4], p: 25 },    { f: [3, 4], p: 75 },    { f: [1, 5], p: 20 },
     { f: [2, 5], p: 40 },    { f: [3, 5], p: 60 },    { f: [4, 5], p: 80 },
-    { f: [1, 6], p: 16.66 }, { f: [1, 7], p: 14.28 }, { f: [1, 8], p: 12.5 },
+    { f: [1, 6], p: 16.67 }, { f: [1, 7], p: 14.29 }, { f: [1, 8], p: 12.5 },
     { f: [3, 8], p: 37.5 },  { f: [5, 8], p: 62.5 },  { f: [7, 8], p: 87.5 },
     { f: [1, 9], p: 11.11 }, { f: [2, 9], p: 22.22 }, { f: [1, 10], p: 10 },
     { f: [1, 11], p: 9.09 }, { f: [1, 12], p: 8.33 }, { f: [1, 16], p: 6.25 },
@@ -601,6 +602,21 @@
     return simplify(Math.round(p * 10), 1000);
   }
 
+  /* Exact percentage text for a fraction f = [num, den].
+   * 1/3 -> "33 1/3", 1/8 -> "12.5", 1/4 -> "25". Used so a question like
+   * "16 2/3% as a fraction" is literally true (16 2/3% = 1/6 exactly). */
+  function percentText(f) {
+    var s = simplify(100 * f[0], f[1]);            // the exact percentage as a fraction
+    if (s.den === 1) return String(s.num);
+    var t = s.den;                                  // terminating decimal iff den = 2^a * 5^b
+    while (t % 2 === 0) t /= 2;
+    while (t % 5 === 0) t /= 5;
+    if (t === 1) return String(roundTo(s.num / s.den, 6));
+    var whole = Math.floor(s.num / s.den);
+    var rem = simplify(s.num - whole * s.den, s.den);
+    return whole === 0 ? (rem.num + '/' + rem.den) : (whole + ' ' + rem.num + '/' + rem.den);
+  }
+
   /* --------------------------------------------- 12. fraction → percentage */
 
   topic({
@@ -614,13 +630,22 @@
       var e = pick(cands);
       if (diff !== 'easy' && Math.random() < 0.35) {
         // multiply numerator & denominator by 2 to require simplification awareness
-        e = { f: [e.f[0] * 2, e.f[1] * 2], p: e.p };
+        e = { f: [e.f[0] * 2, e.f[1] * 2] };
       }
-      var pct = e.p;
+      var exactPct = simplify(100 * e.f[0], e.f[1]);   // the exact percentage, as a fraction
+      var term = exactPct.den;                          // recurring unless the denominator is 2^a * 5^b
+      while (term % 2 === 0) term /= 2;
+      while (term % 5 === 0) term /= 5;
+      var recurring = term !== 1;
+      var exactVal = roundTo(exactPct.num / exactPct.den, 6);
+      var value = recurring ? roundTo(exactVal, 2) : exactVal;
+      var places = recurring ? 2 : Math.max(1, decimalsOf(value));
       return Q('fraction-to-percent', 'known-equivalent', diff,
-        e.f[0] + '/' + e.f[1] + ' as a percentage', A.percentage(pct, Math.max(1, decimalsOf(pct))),
-        'Multiply by 100: ' + e.f[0] + '/' + e.f[1] + ' = ' + roundTo(e.f[0] / e.f[1] * 100, 4) +
-        '% \u2248 ' + pct + '%. Standard equivalent: ' + e.f[0] + '/' + e.f[1] + ' = ' + pct + '%.',
+        e.f[0] + '/' + e.f[1] + ' as a percentage' +
+        (recurring ? ', rounded to 2 decimal places' : ''),
+        A.percentage(value, places),
+        'Multiply by 100: ' + e.f[0] + '/' + e.f[1] + ' \u00d7 100 = ' + exactVal + '%' +
+        (recurring ? ' (a recurring decimal). Rounded to 2 decimal places: ' + value + '%.' : '.'),
         { num: e.f[0], den: e.f[1] });
     }
   });
@@ -638,12 +663,11 @@
       });
       var e = pick(pool);
       var s2 = simplify(e.f[0], e.f[1]);
-      var rawNum = isInt(e.p) ? e.p : Math.round(e.p * 10);
-      var rawDen = isInt(e.p) ? 100 : 1000;
+      var pctText = percentText(e.f);              // exact: "33 1/3", "12.5", "25" …
       return Q('percent-to-fraction', 'known-equivalent', diff,
-        e.p + '% as a fraction in lowest terms', A.fraction(s2.num, s2.den, true),
-        'Write it over 100 and cancel common factors: ' + e.p + '% = ' + rawNum + '/' + rawDen +
-        ' = ' + s2.num + '/' + s2.den + '.',
+        pctText + '% as a fraction in lowest terms', A.fraction(s2.num, s2.den, true),
+        'Work backwards: ' + s2.num + '/' + s2.den + ' \u00d7 100 = ' + pctText + '%, so ' +
+        pctText + '% = ' + s2.num + '/' + s2.den + '.',
         { percent: e.p });
     }
   });
