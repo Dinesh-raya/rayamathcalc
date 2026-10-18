@@ -51,6 +51,11 @@
     <symbol id="i-calculator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="15.01"/><line x1="8" y1="19" x2="16" y2="19"/></symbol>
     <symbol id="i-dots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></symbol>
     <symbol id="i-shuffle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+    <symbol id="i-keypad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/><circle cx="12" cy="7" r="1.5" fill="currentColor"/><circle cx="17" cy="7" r="1.5" fill="currentColor"/><circle cx="7" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="17" cy="12" r="1.5" fill="currentColor"/><circle cx="7" cy="17" r="1.5" fill="currentColor"/><circle cx="12" cy="17" r="1.5" fill="currentColor"/><circle cx="17" cy="17" r="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
   </svg>
 
   <header class="topbar">
@@ -59,6 +64,9 @@
       <span>Speed Maths Trainer</span>
     </div>
     <div class="topbar-actions">
+      <button type="button" class="btn btn-ghost" id="btnCheatSheet" aria-haspopup="dialog" title="Speed Maths Formulas & Tables">
+        <svg class="icon" aria-hidden="true"><use href="#i-book"></use></svg>Cheat Sheet
+      </button>
       <button type="button" class="btn btn-ghost" id="btnHelp" aria-haspopup="dialog">
         <svg class="icon" aria-hidden="true"><use href="#i-help"></use></svg>Shortcuts
       </button>
@@ -116,6 +124,16 @@
           <p class="muted small">Tab is never hijacked &mdash; it keeps its normal job of moving focus.</p>
         </section>
       </div>
+
+      <section aria-labelledby="quick-heading" class="quick-workouts-section">
+        <div class="card-head-row mb-sm">
+          <div>
+            <h2 id="quick-heading">⚡ 1-Click Quick Drills</h2>
+            <p class="muted small mb-none">Targeted bank-exam workout routines ready to launch with one click.</p>
+          </div>
+        </div>
+        <div class="preset-grid" id="presetGrid"></div>
+      </section>
 
       <section aria-labelledby="topics-heading">
         <h2 id="topics-heading">Practise a topic</h2>
@@ -295,6 +313,10 @@
           <span class="pb-label">Level</span>
           <span class="pb-value" id="pDifficulty">Medium</span>
         </div>
+        <div class="pb-item" id="pStreakWrap" hidden>
+          <span class="pb-label">Streak</span>
+          <span class="pb-value pb-streak" id="pStreak">🔥 0</span>
+        </div>
         <div class="pb-spacer"></div>
         <button type="button" class="btn btn-ghost" id="btnPause" aria-pressed="false">
           <svg class="icon" aria-hidden="true"><use id="btnPauseIcon" href="#i-pause"></use></svg><span id="btnPauseLabel">Pause</span>
@@ -328,6 +350,27 @@
             </button>
           </div>
           <div class="mcq-grid" id="pMcq" hidden role="group" aria-label="Answer options"></div>
+
+          <div class="numpad-wrap" id="pNumpadWrap" hidden>
+            <div class="numpad-grid" id="pNumpad">
+              <button type="button" class="np-key" data-key="7">7</button>
+              <button type="button" class="np-key" data-key="8">8</button>
+              <button type="button" class="np-key" data-key="9">9</button>
+              <button type="button" class="np-key np-back" data-key="backspace" aria-label="Backspace">⌫</button>
+              <button type="button" class="np-key" data-key="4">4</button>
+              <button type="button" class="np-key" data-key="5">5</button>
+              <button type="button" class="np-key" data-key="6">6</button>
+              <button type="button" class="np-key np-clear" data-key="clear" aria-label="Clear">C</button>
+              <button type="button" class="np-key" data-key="1">1</button>
+              <button type="button" class="np-key" data-key="2">2</button>
+              <button type="button" class="np-key" data-key="3">3</button>
+              <button type="button" class="np-key np-sub" data-key="-">−</button>
+              <button type="button" class="np-key" data-key="0">0</button>
+              <button type="button" class="np-key" data-key=".">.</button>
+              <button type="button" class="np-key" data-key="/">/</button>
+              <button type="button" class="np-key np-submit" data-key="enter" aria-label="Submit answer">↵</button>
+            </div>
+          </div>
         </div>
 
         <div class="feedback" id="pFeedback" role="status" aria-live="polite" hidden></div>
@@ -335,6 +378,9 @@
         <div class="answer-actions">
           <button type="button" class="btn btn-outline" id="btnSkip">
             <svg class="icon" aria-hidden="true"><use href="#i-skip"></use></svg>Skip
+          </button>
+          <button type="button" class="btn btn-ghost" id="btnToggleNumpad" title="Toggle On-Screen Numpad">
+            <svg class="icon" aria-hidden="true"><use href="#i-keypad"></use></svg><span id="btnToggleNumpadLabel">Numpad</span>
           </button>
           <button type="button" class="btn btn-primary" id="btnNext" hidden>
             Next question<svg class="icon" aria-hidden="true"><use href="#i-arrow-right"></use></svg>
@@ -406,6 +452,9 @@
         </button>
         <button type="button" class="btn btn-outline" id="btnSameTopic">
           <svg class="icon" aria-hidden="true"><use href="#i-rotate"></use></svg>Practise this topic again
+        </button>
+        <button type="button" class="btn btn-outline" id="btnCopyScorecard" title="Copy formatted summary to clipboard">
+          <svg class="icon" aria-hidden="true"><use href="#i-copy"></use></svg>Copy Scorecard
         </button>
         <button type="button" class="btn btn-ghost" id="btnBackHome">
           <svg class="icon" aria-hidden="true"><use href="#i-home"></use></svg>Back to dashboard

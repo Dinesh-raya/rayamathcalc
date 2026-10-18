@@ -51,7 +51,8 @@
     'Total time': 'clock',
     'Questions / min': 'zap',
     'Correct / min': 'trend',
-    'Score': 'trophy'
+    'Score': 'trophy',
+    'Best streak': 'flame'
   };
 
   /* Markup for one sprite icon, e.g. icon('play') -> <svg ...><use href="#i-play"></use></svg>. */
@@ -92,7 +93,10 @@
     tickHandle: null,
     autoHandle: null,
     settingsTouched: {},
-    lastRunConfig: null
+    lastRunConfig: null,
+    currentStreak: 0,
+    bestStreak: 0,
+    numpadOpen: false
   };
 
   function defaultMixedTopics() {
@@ -159,6 +163,7 @@
 
   function openModal(opts) {
     var box = $('modalBox');
+    box.className = 'modal' + (opts.modalClass ? ' ' + opts.modalClass : '');
     $('modalTitle').textContent = opts.title || 'Are you sure?';
     clear($('modalBody'));
     if (opts.bodyNode) $('modalBody').appendChild(opts.bodyNode);
@@ -183,6 +188,7 @@
   function closeModal() {
     if ($('modal').hidden) return;
     $('modal').hidden = true;
+    $('modalBox').className = 'modal';
     var cb = modalState.onClose; modalState.onClose = null;
     if (modalState.lastFocus && modalState.lastFocus.focus) {
       try { modalState.lastFocus.focus(); } catch (e) { /* ignore */ }
@@ -199,6 +205,108 @@
   }
 
   /* ======================================================== DASHBOARD == */
+
+  var PRESETS = [
+    {
+      id: 'daily-warmup',
+      title: 'Daily Exam Warm-up',
+      badge: 'Mixed · 20 Qs',
+      desc: 'Rapid mixed calculation warmup: addition, multiplication, division, and roots.',
+      meta: '20 Questions · Medium',
+      config: function () {
+        var c = freshConfig();
+        c.topic = 'mixed';
+        c.questionCount = 20;
+        c.difficulty = 'medium';
+        return c;
+      }
+    },
+    {
+      id: 'tables-blitz',
+      title: 'Tables Speed Blitz',
+      badge: 'Tables · 3 Mins',
+      desc: 'Master multiplication tables 12 to 25 under a 3-minute timed countdown.',
+      meta: '3 Mins · Countdown',
+      config: function () {
+        var c = freshConfig();
+        c.topic = 'tables';
+        c.sessionType = 'countdown';
+        c.durationMs = 3 * 60 * 1000;
+        c.topicSettings['tables'] = { tableMin: 12, tableMax: 25, multiplierMax: 12 };
+        return c;
+      }
+    },
+    {
+      id: 'squares-cubes',
+      title: 'Squares & Cubes Sprint',
+      badge: 'Powers · 20 Qs',
+      desc: 'Squares up to 50 & cubes up to 30. Crucial for simplification & series.',
+      meta: '20 Questions · Hard',
+      config: function () {
+        var c = freshConfig();
+        c.topic = 'mixed';
+        c.topics = [
+          { id: 'squares', weight: 50 },
+          { id: 'cubes', weight: 50 }
+        ];
+        c.questionCount = 20;
+        c.difficulty = 'hard';
+        return c;
+      }
+    },
+    {
+      id: 'bodmas-simplification',
+      title: 'BODMAS Simplification',
+      badge: 'Simplification',
+      desc: 'Multi-step BODMAS operations with brackets, powers, and cancellation.',
+      meta: '15 Questions · Medium',
+      config: function () {
+        var c = freshConfig();
+        c.topic = 'bodmas';
+        c.questionCount = 15;
+        c.difficulty = 'medium';
+        return c;
+      }
+    },
+    {
+      id: 'percent-reflex',
+      title: 'Percent ↔ Fraction Reflex',
+      badge: 'Percentages',
+      desc: 'Instant reflex drills for 1/2 to 1/20 fraction and percentage conversions.',
+      meta: '20 Questions · Medium',
+      config: function () {
+        var c = freshConfig();
+        c.topic = 'mixed';
+        c.topics = [
+          { id: 'fraction-to-percent', weight: 50 },
+          { id: 'percent-to-fraction', weight: 50 }
+        ];
+        c.questionCount = 20;
+        c.difficulty = 'medium';
+        return c;
+      }
+    }
+  ];
+
+  function renderPresetGrid() {
+    var grid = $('presetGrid');
+    if (!grid) return;
+    clear(grid);
+    PRESETS.forEach(function (p) {
+      var card = make('button', {
+        type: 'button', class: 'preset-card',
+        onclick: function () { startSession(p.config()); }
+      });
+      var top = make('div', { class: 'preset-card-top' });
+      top.appendChild(make('span', { class: 'preset-badge' }, p.badge));
+      top.innerHTML += icon('bolt');
+      card.appendChild(top);
+      card.appendChild(make('strong', null, p.title));
+      card.appendChild(make('p', { class: 'p-desc' }, p.desc));
+      card.appendChild(make('div', { class: 'p-meta', html: icon('play') + '<span>' + p.meta + '</span>' }));
+      grid.appendChild(card);
+    });
+  }
 
   function renderTopicGrid() {
     var grid = $('topicGrid');
@@ -431,11 +539,72 @@
     if (!res.valid) { toast('Fix the highlighted settings first.'); return; }
     app.lastRunConfig = JSON.parse(JSON.stringify(config));
     app.feedbackPending = false;
+    app.currentStreak = 0;
+    app.bestStreak = 0;
+    updateStreakUI();
+    app.numpadOpen = false;
+    updateNumpadUI();
     app.session = D.createSession(config);
     app.session.start();
     showScreen('practice');
     renderQuestion();
     startTicking();
+  }
+
+  function updateStreakUI() {
+    var wrap = $('pStreakWrap');
+    var badge = $('pStreak');
+    if (!wrap || !badge) return;
+    if (app.currentStreak >= 2) {
+      wrap.hidden = false;
+      badge.textContent = '🔥 ' + app.currentStreak;
+      badge.classList.remove('streak-pop');
+      void badge.offsetWidth;
+      badge.classList.add('streak-pop');
+    } else {
+      wrap.hidden = true;
+    }
+  }
+
+  function toggleNumpad() {
+    app.numpadOpen = !app.numpadOpen;
+    updateNumpadUI();
+  }
+
+  function updateNumpadUI() {
+    var wrap = $('pNumpadWrap');
+    var lbl = $('btnToggleNumpadLabel');
+    if (!wrap) return;
+    wrap.hidden = !app.numpadOpen;
+    if (lbl) lbl.textContent = app.numpadOpen ? 'Hide Pad' : 'Numpad';
+  }
+
+  function handleNumpadKey(key) {
+    if (app.screen !== 'practice' || !app.session || app.session.getState() !== D.STATES.RUNNING) return;
+    if (app.feedbackPending) {
+      if (key === 'enter') goNext();
+      return;
+    }
+    var input = $('pInput');
+    if (key === 'enter') {
+      submitInput();
+      return;
+    }
+    if (key === 'clear') {
+      input.value = '';
+      app.session.setPendingInput('');
+      try { input.focus(); } catch (e) {}
+      return;
+    }
+    if (key === 'backspace') {
+      input.value = input.value.slice(0, -1);
+      app.session.setPendingInput(input.value);
+      try { input.focus(); } catch (e) {}
+      return;
+    }
+    input.value += key;
+    app.session.setPendingInput(input.value);
+    try { input.focus(); } catch (e) {}
   }
 
   function answerInputMode(type) {
@@ -475,6 +644,7 @@
     $('pDifficulty').textContent = DIFF_LABEL[s.getCurrentDifficulty()] || '—';
     $('pDiffWrap').hidden = !cfg.adaptive;
     updateScoreDisplay();
+    updateStreakUI();
 
     // clock label
     var clockItem = $('pClock').parentNode;
@@ -495,10 +665,14 @@
     if (cfg.answerMode === 'mcq') {
       $('pInputWrap').hidden = true;
       $('pMcq').hidden = false;
+      $('pNumpadWrap').hidden = true;
+      $('btnToggleNumpad').hidden = true;
       renderMcq(q);
     } else {
       $('pInputWrap').hidden = false;
       $('pMcq').hidden = true;
+      $('btnToggleNumpad').hidden = false;
+      $('pNumpadWrap').hidden = !app.numpadOpen;
       var input = $('pInput');
       input.value = '';
       input.disabled = false;
@@ -575,6 +749,14 @@
   }
 
   function afterFinalise(res, mcqIndex) {
+    if (res.status === 'correct') {
+      app.currentStreak = (app.currentStreak || 0) + 1;
+      if (app.currentStreak > (app.bestStreak || 0)) app.bestStreak = app.currentStreak;
+    } else {
+      app.currentStreak = 0;
+    }
+    updateStreakUI();
+
     var cfg = app.session.getConfig();
     if (cfg.feedback === 'immediate') {
       app.feedbackPending = true;
@@ -620,6 +802,9 @@
     if (app.feedbackPending) return;
     var res = app.session.skip();
     if (!res.ok) return;
+    app.currentStreak = 0;
+    updateStreakUI();
+
     var cfg = app.session.getConfig();
     if (cfg.feedback === 'immediate') {
       app.feedbackPending = true;
@@ -713,6 +898,8 @@
       var partial = app.session.getConfig().answerMode === 'input' ? $('pInput').value : '';
       var r = app.session.tick(partial);
       if (r.questionTimedOut) {
+        app.currentStreak = 0;
+        updateStreakUI();
         var cfg = app.session.getConfig();
         if (cfg.feedback === 'immediate') {
           app.feedbackPending = true;
@@ -808,6 +995,9 @@
       r.attemptsPerMin == null ? '—' : String(r.attemptsPerMin), 'attempted per minute'));
     grid.appendChild(metricCard('Correct / min',
       r.correctPerMin == null ? '—' : String(r.correctPerMin)));
+    if (app.bestStreak > 1) {
+      grid.appendChild(metricCard('Best streak', app.bestStreak + ' in a row', 'consecutive correct', 'good'));
+    }
     if (r.negativeMarking) {
       grid.appendChild(metricCard('Score', String(Math.round(r.score * 100) / 100),
         '−' + r.negativeFraction + ' per wrong', r.score >= 0 ? 'good' : 'bad'));
@@ -1073,8 +1263,18 @@
       startConfig(app.config.topic);
     });
     $('btnBackHome').addEventListener('click', function () { showScreen('dashboard'); });
+    $('btnCopyScorecard').addEventListener('click', copyScorecard);
+
+    // practice numpad & shortcuts
+    $('btnToggleNumpad').addEventListener('click', toggleNumpad);
+    Array.prototype.forEach.call($('pNumpad').querySelectorAll('button'), function (b) {
+      b.addEventListener('click', function () {
+        handleNumpadKey(b.getAttribute('data-key'));
+      });
+    });
 
     // top bar
+    $('btnCheatSheet').addEventListener('click', showCheatSheetModal);
     $('btnHelp').addEventListener('click', showHelpModal);
     $('btnTheme').addEventListener('click', toggleTheme);
 
@@ -1085,6 +1285,197 @@
 
     // global keyboard
     document.addEventListener('keydown', globalKeydown);
+  }
+
+  function copyScorecard() {
+    var r = app.results;
+    if (!r) { toast('No results to copy.'); return; }
+    var cfg = app.lastRunConfig || (app.session ? app.session.getConfig() : {});
+    var topicLabel = cfg.topic === 'mixed' ? 'Mixed Practice' : (G.getTopic(cfg.topic) ? G.getTopic(cfg.topic).label : cfg.topic);
+    var diffLabel = DIFF_LABEL[cfg.difficulty] || 'Medium';
+
+    var lines = [
+      '⚡ Speed Maths Trainer — Drill Scorecard',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '📚 Topic: ' + topicLabel + ' (' + diffLabel + ')',
+      '🎯 Accuracy: ' + (r.accuracy != null ? r.accuracy + '%' : '—') + ' (' + r.correct + ' correct / ' + r.answered + ' answered)',
+      '📊 Questions Shown: ' + r.presented + ' (Incorrect: ' + r.incorrect + ', Skipped: ' + r.skipped + ', Timed out: ' + r.timedOut + ')',
+      '⏱️ Average Response: ' + (r.avgResponseMs != null ? T.formatResponseTime(r.avgResponseMs) : '—'),
+      '⚡ Speed: ' + (r.attemptsPerMin != null ? r.attemptsPerMin + ' Q/min' : '—') + (r.correctPerMin != null ? ' (' + r.correctPerMin + ' correct/min)' : ''),
+      '⏳ Total Time: ' + T.formatDuration(r.totalMs),
+      app.bestStreak > 1 ? ('🔥 Best Streak: ' + app.bestStreak + ' in a row') : null,
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      'Speed Maths Trainer — 100% Free & Offline-Ready'
+    ].filter(Boolean);
+
+    var text = lines.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        toast('Scorecard copied to clipboard!');
+      }).catch(function () {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      toast('Scorecard copied to clipboard!');
+    } catch (e) {
+      toast('Could not copy to clipboard.');
+    }
+    document.body.removeChild(ta);
+  }
+
+  function showCheatSheetModal() {
+    openModal({
+      title: '⚡ Speed Maths Formulas & Cheat Sheet',
+      modalClass: 'modal-lg',
+      bodyNode: buildCheatSheetNode(),
+      actions: [{ label: 'Close', class: 'btn-primary' }]
+    });
+  }
+
+  function buildCheatSheetNode() {
+    var wrap = make('div');
+
+    var tabs = make('div', { class: 'ref-tabs' });
+    var btnPowers = make('button', { type: 'button', class: 'ref-tab is-active' }, 'Squares & Cubes');
+    var btnFractions = make('button', { type: 'button', class: 'ref-tab' }, 'Fractions ↔ Percentages');
+    var btnTricks = make('button', { type: 'button', class: 'ref-tab' }, 'Vedic & Shortcut Tricks');
+    tabs.appendChild(btnPowers);
+    tabs.appendChild(btnFractions);
+    tabs.appendChild(btnTricks);
+    wrap.appendChild(tabs);
+
+    // Panel 1: Squares (1-50) & Cubes (1-30)
+    var p1 = make('div', { class: 'ref-panel' });
+    p1.appendChild(make('h3', null, 'Squares (1 to 50)'));
+    var sqGrid = make('div', { class: 'ref-grid mb-sm' });
+    for (var i = 1; i <= 50; i++) {
+      var cell = make('div', { class: 'ref-cell' });
+      cell.innerHTML = '<span>' + i + '²</span><strong>' + (i * i) + '</strong>';
+      sqGrid.appendChild(cell);
+    }
+    p1.appendChild(sqGrid);
+
+    p1.appendChild(make('h3', null, 'Cubes (1 to 30)'));
+    var cuGrid = make('div', { class: 'ref-grid' });
+    for (var j = 1; j <= 30; j++) {
+      var cCell = make('div', { class: 'ref-cell' });
+      cCell.innerHTML = '<span>' + j + '³</span><strong>' + (j * j * j) + '</strong>';
+      cuGrid.appendChild(cCell);
+    }
+    p1.appendChild(cuGrid);
+    wrap.appendChild(p1);
+
+    // Panel 2: Fractions ↔ Percentages
+    var p2 = make('div', { class: 'ref-panel', hidden: true });
+    p2.appendChild(make('p', { class: 'muted small mb-sm' }, 'Standard bank-exam percentage equivalents. Memorizing these fraction pairs saves 10–15 seconds per simplification question.'));
+    var tbl = make('table', { class: 'ref-table' });
+    tbl.innerHTML = '<thead><tr><th>Fraction</th><th>Decimal Value</th><th>Percentage Equivalent</th></tr></thead>';
+    var tb = make('tbody');
+    var fRows = [
+      ['1/2', '0.5', '50%'],
+      ['1/3', '0.3333...', '33.33% (or 33⅓%)'],
+      ['2/3', '0.6667...', '66.67% (or 66⅔%)'],
+      ['1/4', '0.25', '25%'],
+      ['3/4', '0.75', '75%'],
+      ['1/5', '0.2', '20%'],
+      ['2/5', '0.4', '40%'],
+      ['3/5', '0.6', '60%'],
+      ['4/5', '0.8', '80%'],
+      ['1/6', '0.1667...', '16.67% (or 16⅔%)'],
+      ['1/7', '0.1428...', '14.28% (or 14²/₇%)'],
+      ['1/8', '0.125', '12.5% (or 12½%)'],
+      ['3/8', '0.375', '37.5%'],
+      ['5/8', '0.625', '62.5%'],
+      ['7/8', '0.875', '87.5%'],
+      ['1/9', '0.1111...', '11.11% (or 11¹/₉%)'],
+      ['1/10', '0.1', '10%'],
+      ['1/11', '0.0909...', '9.09% (or 9¹/₁₁%)'],
+      ['1/12', '0.0833...', '8.33% (or 8⅓%)'],
+      ['1/14', '0.0714...', '7.14% (or 7¹/₇%)'],
+      ['1/15', '0.0667...', '6.67% (or 6⅔%)'],
+      ['1/16', '0.0625', '6.25% (or 6¼%)'],
+      ['1/20', '0.05', '5%'],
+      ['1/25', '0.04', '4%']
+    ];
+    fRows.forEach(function (r) {
+      var tr = make('tr');
+      tr.innerHTML = '<td><strong>' + r[0] + '</strong></td><td>' + r[1] + '</td><td>' + r[2] + '</td>';
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    p2.appendChild(tbl);
+    wrap.appendChild(p2);
+
+    // Panel 3: Vedic & Exam Shortcuts
+    var p3 = make('div', { class: 'ref-panel', hidden: true });
+    var tricks = [
+      {
+        title: 'Squaring numbers ending in 5',
+        desc: 'Multiply the tens digit by (tens digit + 1), then append 25.',
+        eg: '65² → (6 × 7) | 25 = 4225  ·  95² → (9 × 10) | 25 = 9025'
+      },
+      {
+        title: 'Multiplication by 5, 25, 50, 125',
+        desc: 'Divide by 2, 4, 2, or 8 and shift decimal points.',
+        eg: 'N × 5 = (N ÷ 2) × 10  ·  N × 25 = (N ÷ 4) × 100  ·  N × 125 = (N ÷ 8) × 1000'
+      },
+      {
+        title: 'Multiplication near 100 (Vedic Base Method)',
+        desc: 'For numbers near 100, subtract cross deviation and multiply deficiencies.',
+        eg: '96 × 97: Deficits are −4 and −3. Left: 96 − 3 = 93. Right: (−4) × (−3) = 12 → 9312.'
+      },
+      {
+        title: 'Squaring numbers near 50',
+        desc: 'Use base 25: for (50 + d)², result is (25 + d) | d².',
+        eg: '54²: d = +4 → (25 + 4) | 4² = 2916  ·  47²: d = −3 → (25 − 3) | 3² = 2209'
+      },
+      {
+        title: 'Multiplication by 11',
+        desc: 'Sandwich digits and add adjacent pairs.',
+        eg: '52 × 11 = 5 [5+2] 2 = 572  ·  78 × 11 = 7 [7+8=15] 8 → (7+1) 5 8 = 858'
+      },
+      {
+        title: 'BODMAS Rule Order',
+        desc: 'Brackets () → Orders (x², √x) → Division ÷ → Multiplication × → Addition + → Subtraction −.',
+        eg: 'Always calculate Division & Multiplication left-to-right before Addition & Subtraction!'
+      }
+    ];
+    tricks.forEach(function (t) {
+      var tc = make('div', { class: 'trick-card' });
+      tc.appendChild(make('h3', null, '💡 ' + t.title));
+      tc.appendChild(make('p', null, t.desc));
+      tc.appendChild(make('p', { html: '<code>' + t.eg + '</code>' }));
+      p3.appendChild(tc);
+    });
+    wrap.appendChild(p3);
+
+    function setTab(idx) {
+      btnPowers.classList.toggle('is-active', idx === 0);
+      btnFractions.classList.toggle('is-active', idx === 1);
+      btnTricks.classList.toggle('is-active', idx === 2);
+      p1.hidden = idx !== 0;
+      p2.hidden = idx !== 1;
+      p3.hidden = idx !== 2;
+    }
+    btnPowers.onclick = function () { setTab(0); };
+    btnFractions.onclick = function () { setTab(1); };
+    btnTricks.onclick = function () { setTab(2); };
+
+    return wrap;
   }
 
   function globalKeydown(e) {
@@ -1169,6 +1560,7 @@
       return;
     }
     app.config = freshConfig();
+    renderPresetGrid();
     renderTopicGrid();
     wire();
     showScreen('dashboard');
