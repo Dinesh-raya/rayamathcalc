@@ -6,13 +6,14 @@
 /* ------------------------------------------------------------- tokens */
 
 :root {
+  color-scheme: light;
   --bg: #f8fafc;
   --bg-accent: #eef2ff;
   --surface: #ffffff;
   --surface-2: #f1f5f9;
   --surface-3: #e2e8f0;
   --text: #0f172a;
-  --muted: #475569;
+  --muted: #374151;
   --border: #e2e8f0;
   --border-strong: #cbd5e1;
   --control-border: #64748b;
@@ -25,7 +26,7 @@
   --ok-soft: #d1fae5;
   --bad: #e11d48;
   --bad-soft: #ffe4e6;
-  --warn: #d97706;
+  --warn: #b45309;
   --warn-soft: #fef3c7;
   --focus: #4f46e5;
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
@@ -39,8 +40,38 @@
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f8fafc;
+  --bg-accent: #eef2ff;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --text: #0f172a;
+  --muted: #374151;         /* boosted from #475569 for better contrast on white */
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --control-border: #64748b;
+  --accent: #4f46e5;
+  --accent-strong: #4338ca;
+  --accent-soft: #eef2ff;
+  --accent-contrast: #ffffff;
+  --accent-2: #db2777;
+  --ok: #059669;
+  --ok-soft: #d1fae5;
+  --bad: #e11d48;
+  --bad-soft: #ffe4e6;
+  --warn: #b45309;          /* darkened for light-bg contrast */
+  --warn-soft: #fef3c7;
+  --focus: #4f46e5;
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+  --shadow: 0 10px 25px -5px rgba(15, 23, 42, .08), 0 8px 10px -6px rgba(15, 23, 42, .04);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, .15);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #090d16;
     --bg-accent: #0f172a;
     --surface: #131b2e;
@@ -70,6 +101,7 @@
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #090d16;
   --bg-accent: #0f172a;
   --surface: #131b2e;
@@ -100,6 +132,8 @@
 /* -------------------------------------------------------------- base */
 
 *, *::before, *::after { box-sizing: border-box; }
+
+button { color: inherit; font: inherit; }
 
 html { -webkit-text-size-adjust: 100%; }
 
@@ -270,6 +304,7 @@ input[type="number"] { max-width: 220px; }
 }
 .preset-card {
   text-align: left; cursor: pointer; font: inherit;
+  color: var(--text);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 1rem 1.15rem;
   display: flex; flex-direction: column; gap: .35rem; position: relative;
@@ -289,7 +324,7 @@ input[type="number"] { max-width: 220px; }
   font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
   padding: .15rem .5rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong);
 }
-.preset-card strong { font-size: 1.02rem; font-weight: 700; }
+.preset-card strong { font-size: 1.02rem; font-weight: 700; color: var(--text); }
 .preset-card .p-desc { font-size: .84rem; color: var(--muted); margin: 0; line-height: 1.4; flex: 1 1 auto; }
 .preset-card .p-meta {
   font-size: .8rem; font-weight: 600; color: var(--accent-strong);
@@ -301,18 +336,23 @@ input[type="number"] { max-width: 220px; }
 .topic-grid { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); margin-bottom: 1.2rem; }
 .topic-card {
   text-align: left; cursor: pointer; font: inherit;
+  color: var(--text);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); padding: .9rem 1rem;
   display: flex; flex-direction: column; gap: .2rem;
   transition: border-color .15s ease, transform .08s ease, box-shadow .15s ease;
 }
 .topic-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--shadow); }
-.topic-card strong { font-weight: 650; }
-.topic-card .group { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.topic-card strong { font-weight: 650; color: var(--text); }
+.topic-card .group { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.topic-card .muted { color: var(--muted); }
 .topic-card .tc-top { display: flex; align-items: center; gap: .4rem; }
 .topic-card .icon { color: var(--muted); width: 1.25rem; height: 1.25rem; margin-bottom: .1rem; transition: color .15s ease, transform .15s ease; }
 .topic-card:hover .icon { color: var(--accent); transform: scale(1.08); }
-.topic-card.featured { border-color: var(--accent); background: var(--accent-soft); }
+.topic-card.featured { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+.topic-card.featured strong { color: var(--accent-strong); }
+.topic-card.featured .group { color: var(--accent); }
+.topic-card.featured .muted { color: var(--muted); }
 
 /* -------------------------------------------------------------- lists */
 
@@ -357,7 +397,7 @@ kbd {
   border-radius: var(--radius); padding: .7rem .95rem; margin-bottom: .8rem; box-shadow: var(--shadow-sm);
 }
 .pb-item { display: flex; flex-direction: column; line-height: 1.15; }
-.pb-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.pb-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
 .pb-value { font-weight: 700; font-variant-numeric: tabular-nums; }
 .pb-spacer { flex: 1 1 auto; }
 .pb-streak {
@@ -626,11 +666,26 @@ kbd {
 }
 .icon-lg { width: 1.35em; height: 1.35em; }
 
-/* Theme toggle swaps a sun/moon glyph instead of relying on JS swapping markup. */
+/* Theme toggle swaps a sun/moon glyph instead of relying on JS swapping markup.
+   Rules:
+   - Default (light system): show moon (user can switch to dark)
+   - data-theme="dark" set explicitly: show sun (user can switch back to light)
+   - data-theme="light" set explicitly: show moon (user can switch to dark)
+   - System prefers dark, no explicit theme: show sun (user can switch to light)
+*/
 #btnTheme .icon-sun { display: none; }
+#btnTheme .icon-moon { display: inline-block; }
+
+/* Explicit dark theme – show sun so user can click back to light */
 :root[data-theme="dark"] #btnTheme .icon-sun { display: inline-block; }
 :root[data-theme="dark"] #btnTheme .icon-moon { display: none; }
+
+/* Explicit light theme – always show moon regardless of system preference */
+:root[data-theme="light"] #btnTheme .icon-sun { display: none; }
+:root[data-theme="light"] #btnTheme .icon-moon { display: inline-block; }
+
+/* System prefers dark, no explicit override – show sun */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) #btnTheme .icon-sun { display: inline-block; }
-  :root:not([data-theme="light"]) #btnTheme .icon-moon { display: none; }
+  :root:not([data-theme="light"]):not([data-theme="dark"]) #btnTheme .icon-sun { display: inline-block; }
+  :root:not([data-theme="light"]):not([data-theme="dark"]) #btnTheme .icon-moon { display: none; }
 }
